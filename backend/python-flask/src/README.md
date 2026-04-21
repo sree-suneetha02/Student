@@ -517,6 +517,29 @@ curl -X POST http://localhost:5017/students \
 
 ## Running Tests
 
+### Run All 3 Languages at Once (Automatic)
+
+No server needed — uses in-memory databases.
+
+```bash
+cd src
+chmod +x run_all_tests.sh
+./run_all_tests.sh
+```
+
+Output summary:
+
+```
+════════════════════════════════════════
+  SUMMARY
+════════════════════════════════════════
+  Passed: 3 / 3 suites
+  Failed: 0 / 3 suites
+════════════════════════════════════════
+```
+
+---
+
 ### Python — pytest (31 tests, no server needed)
 
 ```bash
@@ -529,6 +552,22 @@ python3 -m pytest test_app.py::TestCreateStudent -v
 
 # Run a single test
 python3 -m pytest test_app.py::TestCreateStudent::test_tc09_valid_create_returns_201 -v
+```
+
+### Node.js — Jest (31 tests, no server needed)
+
+```bash
+cd nodejs
+npm install
+npm test
+```
+
+### Go — go test (31 tests, no server needed)
+
+```bash
+cd golang
+go mod tidy
+go test -v ./...
 ```
 
 ### Bash Test Suite (18 cases × 3 backends = 54 tests)
@@ -566,6 +605,9 @@ python3 generate_curl.py --run --backend golang
 | Suite | File | Tests | Needs Server |
 |-------|------|-------|-------------|
 | pytest | `python/test_app.py` | 31 | No |
+| Jest | `nodejs/test_app.js` | 31 | No |
+| go test | `golang/main_test.go` | 31 | No |
+| Auto script | `run_all_tests.sh` | 93 (all 3) | No |
 | Bash curl | `tests/test_suite.sh` | 18 × 3 = 54 | Yes |
 | Python generator | `tests/generate_curl.py` | 18 × 3 = 54 | Optional |
 

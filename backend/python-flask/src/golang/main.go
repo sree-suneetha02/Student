@@ -19,19 +19,18 @@ type Student struct {
 
 var db *sql.DB
 
-func initDB() {
+func initDB(path string) {
 	var err error
-	db, err = sql.Open("sqlite3", "./students.db")
+	db, err = sql.Open("sqlite3", path)
 	if err != nil {
 		panic(err)
 	}
-
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS students (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
-			age INTEGER NOT NULL,
-			email TEXT UNIQUE NOT NULL
+			id    INTEGER PRIMARY KEY AUTOINCREMENT,
+			name  TEXT    NOT NULL,
+			age   INTEGER NOT NULL,
+			email TEXT    UNIQUE NOT NULL
 		)
 	`)
 	if err != nil {
@@ -80,11 +79,9 @@ func validateStudent(data map[string]interface{}, isUpdate bool) []string {
 	return errors
 }
 
-func main() {
-	initDB()
-	defer db.Close()
-
+func setupRouter() *gin.Engine {
 	r := gin.Default()
+
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -94,12 +91,6 @@ func main() {
 			return
 		}
 		c.Next()
-	})
-
-	r.LoadHTMLGlob("../templates/*")
-
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index-golang.html", nil)
 	})
 
 	r.GET("/health", func(c *gin.Context) {
@@ -117,7 +108,7 @@ func main() {
 		}
 		defer rows.Close()
 
-		var students []Student
+		students := []Student{}
 		for rows.Next() {
 			var s Student
 			if err := rows.Scan(&s.ID, &s.Name, &s.Age, &s.Email); err == nil {
@@ -160,7 +151,7 @@ func main() {
 		age := int(data["age"].(float64))
 		email := data["email"].(string)
 
-		result, err := db.Exec(
+		_, err := db.Exec(
 			"INSERT INTO students (name, age, email) VALUES (?, ?, ?)",
 			name, age, email,
 		)
@@ -168,8 +159,6 @@ func main() {
 			c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
 			return
 		}
-
-		_ = result
 		c.JSON(http.StatusCreated, gin.H{"message": "Student created successfully"})
 	})
 
@@ -234,10 +223,20 @@ func main() {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 			return
 		}
-
 		db.Exec("DELETE FROM students WHERE id = ?", c.Param("id"))
 		c.JSON(http.StatusOK, gin.H{"message": "Student deleted successfully"})
 	})
 
+	return r
+}
+
+func main() {
+	initDB("./students.db")
+	defer db.Close()
+	r := setupRouter()
+	r.LoadHTMLGlob("../templates/*")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index-golang.html", nil)
+	})
 	r.Run(":5017")
 }
